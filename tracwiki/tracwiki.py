@@ -123,7 +123,16 @@ class TracWiki(object):
         @arg fileName: Name of the page.
         @type fileName: str
         """
-        version = self.server.wiki.getPageInfo(fileName)["version"]
+        if not os.path.isfile(fileName):
+            raise ValueError("No such file \"%s\"" % fileName)
+
+        pageInfo = self.server.wiki.getPageInfo(fileName)
+        if not pageInfo:
+            version = 0
+            self.conf["info"][fileName] = [version, ""]
+        #if
+        else:
+            version = pageInfo["version"]
 
         if version == self.conf["info"][fileName][0]:
             content = open(fileName).read()
