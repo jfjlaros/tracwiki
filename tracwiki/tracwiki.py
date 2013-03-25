@@ -31,7 +31,7 @@ class TracWiki(object):
     """
     config_file = ".trac_config"
 
-    def __init__(self, url=None, username=None, password=None):
+    def __init__(self, url="", username="", password=""):
         """
         Class constructor. Make the config file if it doesn't exist, read the
         config file.
@@ -43,19 +43,29 @@ class TracWiki(object):
         @arg password: Password.
         @type password: str
         """
-        if not os.path.isfile(self.config_file):
-            protocol, location = url.split("://")
+        delimiter = "://"
+        self.conf = {}
 
-            self.conf = {
-                "protocol": protocol,
-                "location": location,
-                "username": username,
-                "password": password,
-                "info": {}
-            }
-        #if
-        else:
+        if os.path.isfile(self.config_file):
             self.conf = json.loads(open(self.config_file).read())
+
+        if url:
+            if delimiter in url:
+                protocol, location = url.split(delimiter)
+
+                self.conf["protocol"] = protocol
+                self.conf["location"] = location
+                self.conf["username"] = username
+                self.conf["password"] = password
+                if "info" not in self.conf:
+                    self.conf["info"] = {}
+            #if
+            else:
+                raise ValueError("Invalid URL.")
+        #if
+
+        if not self.conf:
+            raise ValueError("No configuration found, use \"config\".")
 
         self.server = xmlrpclib.ServerProxy("%s://%s:%s@%s/login/xmlrpc" % (
             self.conf["protocol"], self.conf["username"],
@@ -209,8 +219,10 @@ def main():
         description=docSplit(config))
     parser_config.add_argument("URL", type=str,
         help="base url of the trac intallation")
-    parser_config.add_argument("USER", type=str, help="user name")
-    parser_config.add_argument("PASS", type=str, help="password")
+    parser_config.add_argument("USER", type=str, nargs='?', default="",
+        help="user name")
+    parser_config.add_argument("PASS", type=str, nargs='?', default="",
+        help="password")
     parser_config.set_defaults(func=config)
 
     parser_checkout = subparsers.add_parser("checkout",
