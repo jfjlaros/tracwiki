@@ -31,11 +31,13 @@ class TracWiki(object):
     """
     config_file = ".trac_config"
 
-    def __init__(self, url="", username="", password=""):
+    def __init__(self, handle, url="", username="", password=""):
         """
         Class constructor. Make the config file if it doesn't exist, read the
         config file.
 
+        @arg handle: Open writeable handle to the output file.
+        @type handle: stream
         @arg url: URL of the trac server.
         @type url: str
         @arg username: User name.
@@ -45,6 +47,7 @@ class TracWiki(object):
         """
         delimiter = "://"
         self.conf = {}
+        self.handle = handle
 
         if os.path.isfile(self.config_file):
             self.conf = json.loads(open(self.config_file).read())
@@ -91,7 +94,8 @@ class TracWiki(object):
             localMd5sum = hashlib.md5(localContent).hexdigest()
 
             if self.conf["info"][fileName][1] != localMd5sum:
-                print "\"%s\" has local modifications." % fileName
+                self.handle.write("\n\"%s\" has local modifications." %
+                    fileName)
                 return
             #if
         #if
@@ -107,13 +111,16 @@ class TracWiki(object):
                 self.conf["info"][fileName][1] != md5sum):
                 open(fileName, "w").write(content)
                 self.conf["info"][fileName] = [version, md5sum]
-                print "Updated \"%s\"." % fileName
+                self.handle.write("\nUpdated \"%s\"." % fileName)
             #if
             else:
-                print "\"%s\" is up to date." % fileName
+                #self.handle.write("\"%s\" is up to date." % fileName)
+                self.handle.write(".")
+                self.handle.flush()
+            #else
         #if
         else:
-            print "No such page \"%s\"." % fileName
+            self.handle.write("\nNo such page \"%s\"." % fileName)
     #__getFile
 
     def __putFile(self, fileName):
@@ -142,13 +149,16 @@ class TracWiki(object):
                 self.server.wiki.putPage(fileName, open(fileName).read(), {})
                 self.conf["info"][fileName][0] += 1
                 self.conf["info"][fileName][1] = md5sum
-                print "Committed \"%s\"." % fileName
+                self.handle.write("\nCommitted \"%s\"." % fileName)
             #if
             else:
-                print "\"%s\" is up to date." % fileName
+                #self.handle.write("\"%s\" is up to date." % fileName)
+                self.handle.write(".")
+                self.handle.flush()
+            #else
         #if
         else:
-            print "Version error, can not commit \"%s\"." % fileName
+            self.handle.write("\nVersion error, can not commit \"%s\"." % fileName)
     #__putFile
 
     def checkout(self, fileName=None):
@@ -163,6 +173,7 @@ class TracWiki(object):
                 self.__getFile(i)
         else:
             self.__getFile(fileName)
+        self.handle.write("\n")
     #checkout
 
     def commit(self, fileName=None):
@@ -177,6 +188,7 @@ class TracWiki(object):
                 self.__putFile(i)
         else:
             self.__putFile(fileName)
+        self.handle.write("\n")
     #commit
 #TracWiki
 
@@ -187,7 +199,7 @@ def config(args):
     @arg args: Argparse argument list.
     @type args: object
     """
-    TracWiki(args.URL, args.USER, args.PASS)
+    TracWiki(args.out, args.URL, args.USER, args.PASS)
 #config
 
 def checkout(args):
@@ -197,7 +209,7 @@ def checkout(args):
     @arg args: Argparse argument list.
     @type args: object
     """
-    T = TracWiki()
+    T = TracWiki(args.out)
 
     T.checkout(args.FILE)
 #checkout
@@ -209,7 +221,7 @@ def commit(args):
     @arg args: Argparse argument list.
     @type args: object
     """
-    T = TracWiki()
+    T = TracWiki(args.out)
 
     T.commit(args.FILE)
 #commit
@@ -218,13 +230,17 @@ def main():
     """
     Main entry point.
     """
+    default_parser = argparse.ArgumentParser(add_help=False)
+    default_parser.add_argument("-o", dest="out", type=argparse.FileType("w"),
+        default=sys.stdout, help="write output to this file")
+
     usage = __doc__.split("\n\n\n")
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=usage[0], epilog=usage[1])
     subparsers = parser.add_subparsers()
 
-    parser_config = subparsers.add_parser("config",
+    parser_config = subparsers.add_parser("config", parents=[default_parser],
         description=docSplit(config))
     parser_config.add_argument("URL", type=str,
         help="base url of the trac intallation")
@@ -235,12 +251,12 @@ def main():
     parser_config.set_defaults(func=config)
 
     parser_checkout = subparsers.add_parser("checkout",
-        description=docSplit(checkout))
+        parents=[default_parser], description=docSplit(checkout))
     parser_checkout.add_argument("FILE", type=str, nargs='?',
         help="name of the page")
     parser_checkout.set_defaults(func=checkout)
 
-    parser_commit = subparsers.add_parser("commit",
+    parser_commit = subparsers.add_parser("commit", parents=[default_parser],
         description=docSplit(commit))
     parser_commit.add_argument("FILE", type=str, nargs='?',
         help="name of the page")
