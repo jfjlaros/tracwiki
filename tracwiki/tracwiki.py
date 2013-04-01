@@ -11,6 +11,8 @@ and commit commands are available.
 import os
 import sys
 import json
+import keyring
+import getpass
 import hashlib
 import argparse
 import xmlrpclib
@@ -48,6 +50,7 @@ class TracWiki(object):
         delimiter = "://"
         self.conf = {}
         self.handle = handle
+        self.password = None
 
         if os.path.isfile(self.config_file):
             self.conf = json.loads(open(self.config_file).read())
@@ -59,7 +62,13 @@ class TracWiki(object):
                 self.conf["protocol"] = protocol
                 self.conf["location"] = location
                 self.conf["username"] = username
-                self.conf["password"] = password
+                if not username:
+                    self.conf["username"] = raw_input("User name: ")
+                if not password:
+                    self.password = getpass.getpass("Password: ")
+                    keyring.set_password(location, self.conf["username"],
+                        self.password)
+                #if
                 if "info" not in self.conf:
                     self.conf["info"] = {}
             #if
@@ -70,9 +79,13 @@ class TracWiki(object):
         if not self.conf:
             raise ValueError("No configuration found, use \"config\".")
 
+        if self.password == None:
+            self.password = keyring.get_password(self.conf["location"],
+                self.conf["username"])
+
         self.server = xmlrpclib.ServerProxy("%s://%s:%s@%s/login/xmlrpc" % (
             self.conf["protocol"], self.conf["username"],
-            self.conf["password"], self.conf["location"]))
+            self.password, self.conf["location"]))
     #__init__
 
     def __del__(self):
@@ -114,7 +127,6 @@ class TracWiki(object):
                 self.handle.write("\nUpdated \"%s\"." % fileName)
             #if
             else:
-                #self.handle.write("\"%s\" is up to date." % fileName)
                 self.handle.write(".")
                 self.handle.flush()
             #else
@@ -152,7 +164,6 @@ class TracWiki(object):
                 self.handle.write("\nCommitted \"%s\"." % fileName)
             #if
             else:
-                #self.handle.write("\"%s\" is up to date." % fileName)
                 self.handle.write(".")
                 self.handle.flush()
             #else
