@@ -153,7 +153,8 @@ class TracWiki(object):
             #else
         #if
         else:
-            self.handle.write("\nVersion error, can not commit \"%s\"." % fileName)
+            self.handle.write("\nVersion error, can not commit \"%s\"." %
+                fileName)
     #__putFile
 
     def checkout(self, fileName=None):
@@ -185,6 +186,21 @@ class TracWiki(object):
             self.__putFile(fileName)
         self.handle.write("\n")
     #commit
+
+    def attach(self, fileName, attachments):
+        """
+        Attach a file to a page.
+
+        @arg fileName: Name of the page.
+        @type fileName: str
+        @arg attachments: List of open handles to files to attach.
+        @type attachments: list(stream)
+        """
+        for attachment in attachments:
+            self.server.wiki.putAttachment("%s/%s" % (fileName,
+                os.path.basename(attachment.name)),
+                xmlrpclib.Binary(attachment.read()))
+    #attach
 #TracWiki
 
 def config(args):
@@ -221,6 +237,14 @@ def commit(args):
     T.commit(args.FILE)
 #commit
 
+def attach(args):
+    """
+    """
+    T = TracWiki(None)
+
+    T.attach(args.FILE, args.ATTACHMENT)
+#attach
+
 def main():
     """
     Main entry point.
@@ -228,6 +252,10 @@ def main():
     default_parser = argparse.ArgumentParser(add_help=False)
     default_parser.add_argument("-o", dest="out", type=argparse.FileType("w"),
         default=sys.stdout, help="write output to this file")
+
+    file_parser = argparse.ArgumentParser(add_help=False)
+    file_parser.add_argument("FILE", type=str, nargs='?',
+        help="name of the page")
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -246,16 +274,19 @@ def main():
     parser_config.set_defaults(func=config)
 
     parser_checkout = subparsers.add_parser("checkout",
-        parents=[default_parser], description=docSplit(checkout))
-    parser_checkout.add_argument("FILE", type=str, nargs='?',
-        help="name of the page")
+        parents=[file_parser, default_parser], description=docSplit(checkout))
     parser_checkout.set_defaults(func=checkout)
 
-    parser_commit = subparsers.add_parser("commit", parents=[default_parser],
-        description=docSplit(commit))
-    parser_commit.add_argument("FILE", type=str, nargs='?',
-        help="name of the page")
+    parser_commit = subparsers.add_parser("commit", parents=[file_parser,
+        default_parser], description=docSplit(commit))
     parser_commit.set_defaults(func=commit)
+
+    parser_attach = subparsers.add_parser("attach", parents=[default_parser],
+        description=docSplit(attach))
+    parser_attach.add_argument("FILE", type=str, help="name of the page")
+    parser_attach.add_argument("ATTACHMENT", type=argparse.FileType("r"),
+        nargs='+', help="list of attachments")
+    parser_attach.set_defaults(func=attach)
 
     args = parser.parse_args()
 
