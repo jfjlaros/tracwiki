@@ -1,13 +1,5 @@
 #!/usr/bin/env python
 
-"""
-Checkout and commit wiki pages stored on a trac server.
-
-
-First use the config option to configure the server, after this, the checkout
-and commit commands are available.
-"""
-
 import os
 import sys
 import json
@@ -17,15 +9,7 @@ import hashlib
 import argparse
 import xmlrpclib
 
-def docSplit(func):
-    """
-    Return the header of the docstring of a function.
-
-    @arg func: A function.
-    @type func: function
-    """
-    return func.__doc__.split("\n\n")[0]
-#docSplit
+from . import docSplit, version, usage
 
 class TracWiki(object):
     """
@@ -245,10 +229,10 @@ def main():
     default_parser.add_argument("-o", dest="out", type=argparse.FileType("w"),
         default=sys.stdout, help="write output to this file")
 
-    usage = __doc__.split("\n\n\n")
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=usage[0], epilog=usage[1])
+    parser.add_argument('-v', action="version", version=version(parser.prog))
     subparsers = parser.add_subparsers()
 
     parser_config = subparsers.add_parser("config", parents=[default_parser],

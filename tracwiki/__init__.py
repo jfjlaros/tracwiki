@@ -1,8 +1,11 @@
 """
-tracwiki: Checkout and commit trac wiki pages.
+tracwiki: Checkout and commit wiki pages stored on a trac server.
+
+
+First use the config option to configure the server, after this, the checkout
+and commit commands are available.
 
 Copyright (c) 2012 Jeroen F.J. Laros <jlaros@fixedpoint.nl>
-
 Licensed under the MIT license, see the LICENSE file.
 """
 
@@ -21,10 +24,19 @@ Licensed under the MIT license, see the LICENSE file.
 
 RELEASE = False
 
-__version_info__ = ('0', '1', 'dev')
+__version_info__ = ('0', '11', 'dev')
 
 
 __version__ = '.'.join(__version_info__)
 __author__ = 'Jeroen F.J. Laros'
 __contact__ = 'jlaros@fixedpoint.nl'
-__homepage__ = 'http://www.fixedpoint.nl'
+__homepage__ = 'https://www.fixedpoint.nl'
+
+usage = __doc__.split("\n\n\n")
+
+def docSplit(func):
+    return func.__doc__.split("\n\n")[0]
+
+def version(name):
+    return "%s version %s\n\nAuthor   : %s <%s>\nHomepage : %s" % (name,
+        __version__, __author__, __contact__, __homepage__)

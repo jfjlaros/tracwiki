@@ -27,13 +27,14 @@ setup(
     platforms=["any"],
     packages=["tracwiki"],
     requires=requires,
+    install_requires=requires,
     entry_points = {
         "console_scripts": [
             "tracwiki = tracwiki.tracwiki:main",
         ]
     },
     classifiers = [
-        "Development Status :: 1 - Alpha",
+        "Development Status :: 3 - Alpha",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
     ],
