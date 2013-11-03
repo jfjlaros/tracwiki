@@ -201,6 +201,21 @@ class TracWiki(object):
                 os.path.basename(attachment.name)),
                 xmlrpclib.Binary(attachment.read()))
     #attach
+
+    def get_attachments(self, page_name, directory_name):
+        """
+        Get all attachments of a page.
+
+        @arg page_name: Name of the page.
+        @type page_name: str
+        @arg directory_name: Name of the destination directory.
+        @type directory_name: str
+        """
+        for attachment in self.server.wiki.listAttachments(page_name):
+            handle = open("{}/{}".format(directory_name,
+                os.path.basename(attachment)), "w")
+            handle.write(str(self.server.wiki.getAttachment(attachment)))
+    #get_attachments
 #TracWiki
 
 def config(args):
@@ -245,6 +260,18 @@ def attach(args):
     T.attach(args.FILE, args.ATTACHMENT)
 #attach
 
+def get_attachments(args):
+    """
+    Get all attachments of a page.
+
+    @arg args: Argparse argument list.
+    @type args: object
+    """
+    T = TracWiki(None)
+
+    T.get_attachments(args.FILE, args.DIRECTORY)
+#get_attachments
+
 def main():
     """
     Main entry point.
@@ -287,6 +314,13 @@ def main():
     parser_attach.add_argument("ATTACHMENT", type=argparse.FileType("r"),
         nargs='+', help="list of attachments")
     parser_attach.set_defaults(func=attach)
+
+    parser_get_attachments = subparsers.add_parser("get_attachments",
+        parents=[default_parser, file_parser],
+        description=docSplit(get_attachments))
+    parser_get_attachments.add_argument("DIRECTORY", type=str,
+        help="name of the destination directory")
+    parser_get_attachments.set_defaults(func=get_attachments)
 
     args = parser.parse_args()
 
