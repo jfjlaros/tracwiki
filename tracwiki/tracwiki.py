@@ -254,6 +254,10 @@ def commit(args):
 
 def attach(args):
     """
+    Attach a file to a page.
+
+    @arg args: Argparse argument list.
+    @type args: object
     """
     T = TracWiki(None)
 
@@ -284,6 +288,10 @@ def main():
     file_parser.add_argument("FILE", type=str, nargs='?',
         help="name of the page")
 
+    mandatory_file_parser = argparse.ArgumentParser(add_help=False)
+    mandatory_file_parser.add_argument("FILE", type=str,
+        help="name of the page")
+
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=usage[0], epilog=usage[1])
@@ -308,15 +316,14 @@ def main():
         default_parser], description=docSplit(commit))
     parser_commit.set_defaults(func=commit)
 
-    parser_attach = subparsers.add_parser("attach", parents=[default_parser],
-        description=docSplit(attach))
-    parser_attach.add_argument("FILE", type=str, help="name of the page")
+    parser_attach = subparsers.add_parser("attach", parents=[default_parser,
+        mandatory_file_parser], description=docSplit(attach))
     parser_attach.add_argument("ATTACHMENT", type=argparse.FileType("r"),
         nargs='+', help="list of attachments")
     parser_attach.set_defaults(func=attach)
 
     parser_get_attachments = subparsers.add_parser("get_attachments",
-        parents=[default_parser, file_parser],
+        parents=[default_parser, mandatory_file_parser],
         description=docSplit(get_attachments))
     parser_get_attachments.add_argument("DIRECTORY", type=str,
         help="name of the destination directory")
