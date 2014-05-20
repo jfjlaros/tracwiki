@@ -216,6 +216,17 @@ class TracWiki(object):
                 os.path.basename(attachment)), "w")
             handle.write(str(self.server.wiki.getAttachment(attachment)))
     #get_attachments
+
+    def detach_all(self, page_name):
+        """
+        Drop all attachments of a page.
+
+        @arg page_name: Name of the page.
+        @type page_name: str
+        """
+        for attachment in self.server.wiki.listAttachments(page_name):
+            self.server.wiki.deleteAttachment(attachment)
+    #detach_all
 #TracWiki
 
 def config(args):
@@ -276,6 +287,18 @@ def get_attachments(args):
     T.get_attachments(args.FILE, args.DIRECTORY)
 #get_attachments
 
+def detach_all(args):
+    """
+    Drop all attachments of a page.
+
+    @arg args: Argparse argument list.
+    @type args: object
+    """
+    T = TracWiki(None)
+
+    T.detach_all(args.FILE)
+#detach_all
+
 def main():
     """
     Main entry point.
@@ -328,6 +351,11 @@ def main():
     parser_get_attachments.add_argument("DIRECTORY", type=str,
         help="name of the destination directory")
     parser_get_attachments.set_defaults(func=get_attachments)
+
+    parser_detach_all = subparsers.add_parser("detach_all",
+        parents=[mandatory_file_parser],
+        description=docSplit(detach_all))
+    parser_detach_all.set_defaults(func=detach_all)
 
     args = parser.parse_args()
 
