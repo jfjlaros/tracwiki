@@ -79,6 +79,12 @@ class TracWiki(object):
         open(self.config_file, "w").write(json.dumps(self.conf))
     #__del__
 
+    def __mangle(self, fileName):
+        return fileName.replace("/", "__SLASH__")
+
+    def __unmangle(self, fileName):
+        return fileName.replace("__SLASH__", "/")
+
     def __getFile(self, fileName):
         """
         Retrieve a page from the server.
@@ -86,13 +92,15 @@ class TracWiki(object):
         @arg fileName: Name of the page.
         @type fileName: str
         """
-        if fileName in self.conf["info"]:
-            localContent = open(fileName).read()
+        rawFileName = self.__mangle(fileName)
+
+        if rawFileName in self.conf["info"]:
+            localContent = open(rawFileName).read()
             localMd5sum = hashlib.md5(localContent).hexdigest()
 
-            if self.conf["info"][fileName][1] != localMd5sum:
+            if self.conf["info"][rawFileName][1] != localMd5sum:
                 self.handle.write("\n\"%s\" has local modifications." %
-                    fileName)
+                    rawFileName)
                 return
             #if
         #if
@@ -105,10 +113,10 @@ class TracWiki(object):
             md5sum = hashlib.md5(content).hexdigest()
 
             if (fileName not in self.conf["info"] or
-                self.conf["info"][fileName][1] != md5sum):
-                open(fileName, "w").write(content)
-                self.conf["info"][fileName] = [version, md5sum]
-                self.handle.write("\nUpdated \"%s\"." % fileName)
+                self.conf["info"][rawFileName][1] != md5sum):
+                open(rawFileName, "w").write(content)
+                self.conf["info"][rawFileName] = [version, md5sum]
+                self.handle.write("\nUpdated \"%s\"." % rawFileName)
             #if
             else:
                 self.handle.write(".")
@@ -126,10 +134,12 @@ class TracWiki(object):
         @arg fileName: Name of the page.
         @type fileName: str
         """
+        rawFileName = self.__unmangle(fileName)
+
         if not os.path.isfile(fileName):
             raise ValueError("No such file \"%s\"" % fileName)
 
-        pageInfo = self.server.wiki.getPageInfo(fileName)
+        pageInfo = self.server.wiki.getPageInfo(rawFileName)
         if not pageInfo:
             version = 0
             self.conf["info"][fileName] = [version, ""]
@@ -142,7 +152,8 @@ class TracWiki(object):
             md5sum = hashlib.md5(content).hexdigest()
 
             if self.conf["info"][fileName][1] != md5sum:
-                self.server.wiki.putPage(fileName, open(fileName).read(), {})
+                self.server.wiki.putPage(rawFileName, open(fileName).read(),
+                    {})
                 self.conf["info"][fileName][0] += 1
                 self.conf["info"][fileName][1] = md5sum
                 self.handle.write("\nCommitted \"%s\"." % fileName)
